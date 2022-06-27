@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /*
@@ -14,7 +16,115 @@ public class App {
 
     public String bestCharge(List<String> inputs) {
         //TODO: write code here
+        double itemSum = 0, saveSum = 0, discountSum = 0;
+        StringBuilder stringBuilder = new StringBuilder("============= Order details =============\n");
+        List<Item> itemList = itemRepository.findAll();
+        List<SalesPromotion> salesPromotionList = salesPromotionRepository.findAll();
+        ArrayList<String> discountDishName = new ArrayList<>();
+        //count items sum
+        for (String s : inputs) {
+            String[] sList = s.split(" x ");
+            String name = sList[0];
+            int count = Integer.valueOf(sList[1]);
+            for (Item item : itemList) {
+                if (item.getId().equals(name)) {
+                    itemSum += item.getPrice() * count;
+                    stringBuilder.append(item.getName())
+                            .append(" x ")
+                            .append(count)
+                            .append(" = ");
+                    if(Math.ceil((item.getPrice() * count)) - (item.getPrice() * count) >0){
+                        stringBuilder.append(item.getPrice() * count);
+                    }else {
+                        stringBuilder.append((int)(item.getPrice() * count));
+                    }
 
-        return null;
+                            stringBuilder.append(" yuan\n");
+                }
+            }
+        }
+        stringBuilder.append("-----------------------------------\n");
+
+        for (SalesPromotion salesPromotion : salesPromotionList) {
+            if (salesPromotion.getType().equals("BUY_30_SAVE_6_YUAN")) {
+                //BUY_30_SAVE_6_YUAN
+                int saveTime = (int) (itemSum / 30);
+                saveSum = (int) (saveTime * 6);
+            } else if (salesPromotion.getType().equals("50%_DISCOUNT_ON_SPECIFIED_ITEMS")) {
+                //50%_DISCOUNT_ON_SPECIFIED_ITEMS
+                for (String s : inputs) {
+                    String[] sList = s.split(" x ");
+                    String name = sList[0];
+                    int count = Integer.valueOf(sList[1]);
+
+                    List<String> relatedItems = salesPromotion.getRelatedItems();
+                    for (String relatedItem : relatedItems) {
+                        if (name.equals(relatedItem)) {
+                            for (Item item : itemList) {
+                                if (item.getId().equals(name)) {
+                                    discountDishName.add(item.getName());
+                                    discountSum += item.getPrice() * count * 0.5;
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                }
+            }
+        }
+        if (saveSum == 0 || discountSum == 0) {
+            stringBuilder.append("Total：");
+            if (Math.ceil(itemSum) - itemSum > 0) {
+                stringBuilder.append(itemSum);
+            } else {
+                stringBuilder.append((int) itemSum);
+            }
+            stringBuilder
+                    .append(" yuan\n")
+                    .append("===================================");
+            return stringBuilder.toString();
+        }
+        stringBuilder.append("Promotion used:\n");
+        if (saveSum >= discountSum) {
+            stringBuilder.append("满30减6 yuan，saving ");
+
+            if (Math.ceil(saveSum) - saveSum > 0) {
+                stringBuilder.append(saveSum);
+            } else {
+                stringBuilder.append((int) saveSum);
+            }
+
+                    stringBuilder
+                    .append(" yuan\n");
+            itemSum -= saveSum;
+        } else {
+            stringBuilder.append("Half price for certain dishes (")
+                    .append(String.join("，",discountDishName.toArray(new CharSequence[discountDishName.size()])))
+                    .append(")，saving ");
+
+            if (Math.ceil(discountSum) - discountSum > 0) {
+                stringBuilder.append(discountSum);
+            } else {
+                stringBuilder.append((int) discountSum);
+            }
+
+                    stringBuilder
+                    .append(" yuan\n");
+            itemSum -= discountSum;
+        }
+
+        stringBuilder.append("-----------------------------------\n")
+                .append("Total：");
+        if (Math.ceil(itemSum) - itemSum > 0) {
+            stringBuilder.append(itemSum);
+        } else {
+            stringBuilder.append((int) itemSum);
+        }
+        stringBuilder
+                .append(" yuan\n")
+                .append("===================================");
+        return stringBuilder.toString();
     }
 }
